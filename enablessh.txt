@@ -1,0 +1,36 @@
+
+
+mkdir -p ~/.ssh
+
+chmod -R 600 ~/.ssh
+
+rm -f ~/.ssh/id_rsa
+
+ssh-keygen -t rsa -f ~/.ssh/id_rsa -q -N ""
+
+echo "StrictHostKeyChecking=accept-new" >>~/.ssh/config
+
+
+echo 'AcceptEnv   *'  >> /etc/ssh/sshd_config
+
+
+echo "" >>/etc/ssh/sshd_config
+echo "PermitEmptyPasswords yes" >>/etc/ssh/sshd_config
+echo "PubkeyAuthentication yes" >>/etc/ssh/sshd_config
+
+if grep "^PubkeyAuthentication" /etc/ssh/sshd_config | grep yes; then
+  #for openbsd 7.7 arm64, it's already "yes"
+  grep "^PubkeyAuthentication" /etc/ssh/sshd_config
+  echo "OK"
+elif grep "^PubkeyAuthentication" /etc/ssh/sshd_config; then
+  sed -i "s/PubkeyAuthentication .*/PubkeyAuthentication yes/" /etc/ssh/sshd_config
+else
+  echo "PubkeyAuthentication yes" >>/etc/ssh/sshd_config
+fi
+
+
+rcctl restart sshd
+
+
+
+
