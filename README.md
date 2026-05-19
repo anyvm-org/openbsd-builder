@@ -15,6 +15,7 @@ All the supported releases are here:
 
 | Release | x86_64  | aarch64(arm64) | riscv64 |
 |---------|---------|---------|----------------|
+| 7.9     |  ✅     |   ✅   |           ✅  |
 | 7.8     |  ✅     |   ✅   |           ✅  |
 | 7.7     |  ✅     |   ✅   |           ✅  |
 | 7.6     |  ✅     |   ✅   |           ❌  |
@@ -40,6 +41,6 @@ How to build:
 
     Just clone the repo. and run:
     ```bash
-    bash build.sh conf/openbsd-7.8.conf
+    bash build.sh conf/openbsd-7.9.conf
     ```
    
