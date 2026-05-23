@@ -25,4 +25,10 @@ fi
 #echo "su - root" >>/etc/rc.local
 
 
+set -e 
+#make sure the packages are installed
+pkg_info -e rsync-*
+pkg_info -e  sshfs-fuse-*
+
+
 exit 0
