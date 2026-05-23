@@ -20,8 +20,8 @@ done
 swap=$(swapctl -l | awk '/^\/dev/ {print $1}')
 if [ ! -z "$swap" ]; then
   echo zeroing swap $swap
-  swapctl -d $swap
-  dd if=/dev/zero of=$swap bs=1024k >/dev/null 2>&1
+  swapctl -d $swap || true
+  dd if=/dev/zero of=$swap bs=1024k >/dev/null 2>&1 || true
 fi
 
 #enable autologin with root in the console
