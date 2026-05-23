@@ -1,5 +1,8 @@
 
-
+set -e 
+#make sure the packages are installed
+pkg_info -e rsync-*
+pkg_info -e  sshfs-fuse-*
 
 #remove root password
 sed -i 's|$2b$10$qS3/zFLn/6wTQrjNhAddEepvKw.XculyRsXH60FLXjcj5fQeZzIQu||' /etc/master.passwd
@@ -25,10 +28,7 @@ fi
 #echo "su - root" >>/etc/rc.local
 
 
-set -e 
-#make sure the packages are installed
-pkg_info -e rsync-*
-pkg_info -e  sshfs-fuse-*
+
 
 
 exit 0
