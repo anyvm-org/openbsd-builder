@@ -48,6 +48,6 @@ How to build:
 
     Just clone the repo. and run:
     ```bash
-    bash build.sh conf/openbsd-7.9.conf
+    python3 build.py conf/openbsd-7.9.conf
     ```
    
