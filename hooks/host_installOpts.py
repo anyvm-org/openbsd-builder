@@ -27,7 +27,17 @@ string("http://192.168.122.1:8000/%s" % env("VM_OPTS"))
 enter()
 
 time.sleep(2)
-waitForText("nstall or")
+# Wait for the post-response-file "(I)nstall or (U)pgrade?" prompt, then
+# pick install. Anchor on "pgrade?" WITH the trailing question mark, NOT
+# "nstall or": the very first menu -- "(I)nstall, (U)pgrade, (A)utoinstall
+# or (S)hell?" -- is still on screen at this point (the console only
+# scrolls a few lines), and its "Autoinstall or" substring matches
+# "nstall or". The old anchor therefore fired 'i' immediately, while the
+# response file was still downloading, so the keystroke was dropped and the
+# real prompt was never answered -> the install hung forever. Only the
+# install/upgrade prompt ends in "Upgrade?"; in the first menu it is
+# "Upgrade," (comma), so "pgrade?" matches the right screen unambiguously.
+waitForText("pgrade?")
 string("i")
 enter()
 
@@ -47,6 +57,23 @@ if env("VM_ARCH") == "riscv64":
     string("h")
     enter()
     time.sleep(10)
+    if isRunning() == 0:
+        if shutdownVM() != 0:
+            log("shutdown error")
+        if destroyVM() != 0:
+            log("destroyVM error")
+
+if env("VM_ARCH") not in ("aarch64", "riscv64"):
+    # amd64 / default x86: OpenBSD autoinstall REBOOTS after a successful
+    # install -- it does not power off -- and the install ISO is still ahead
+    # of the disk in the boot order (-boot order=dc), so the reboot lands
+    # back in the installer's first menu instead of the freshly installed
+    # disk. The pipeline's "wait for the install VM to power off" loop then
+    # never returns. Wait for the success banner, then force the VM down so
+    # startVM relaunches from the installed disk (no ISO). "successfully
+    # completed" is the OCR-stable part of "Your OpenBSD install has been
+    # successfully completed!".
+    waitForText("successfully completed")
     if isRunning() == 0:
         if shutdownVM() != 0:
             log("shutdown error")
