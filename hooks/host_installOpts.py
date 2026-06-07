@@ -64,16 +64,29 @@ if env("VM_ARCH") == "riscv64":
             log("destroyVM error")
 
 if env("VM_ARCH") not in ("aarch64", "riscv64"):
-    # amd64 / default x86: OpenBSD autoinstall REBOOTS after a successful
-    # install -- it does not power off -- and the install ISO is still ahead
-    # of the disk in the boot order (-boot order=dc), so the reboot lands
-    # back in the installer's first menu instead of the freshly installed
-    # disk. The pipeline's "wait for the install VM to power off" loop then
-    # never returns. Wait for the success banner, then force the VM down so
-    # startVM relaunches from the installed disk (no ISO). "successfully
-    # completed" is the OCR-stable part of "Your OpenBSD install has been
-    # successfully completed!".
-    waitForText("successfully completed")
+    # amd64 / default x86 (VNC build). OpenBSD autoinstall installs the sets
+    # and then REBOOTS -- it never powers off -- and the install ISO is still
+    # first in the boot order (-boot order=dc), so the reboot lands back in
+    # the installer's first menu instead of the freshly installed disk. The
+    # pipeline's "wait for the install VM to power off" loop would then never
+    # return.
+    #
+    # We do NOT key off the "...successfully completed!" banner here: on the
+    # VNC path the screen is sampled by a 3s OCR poll, and the banner flashes
+    # by faster than that before the reboot (reproducibly missed on CI, only
+    # caught locally by luck). Instead we wait for the installer's FIRST MENU
+    # to reappear after the post-install reboot -- it sits there waiting for
+    # input, so it is a stable, long-lived signal. (aarch64/riscv64 use a
+    # console/serial build whose log is cumulative, so their banner wait
+    # above is reliable; only this VNC path needs the reboot-based signal.)
+    #
+    # Sleep first so the "answer i" residual first menu has been replaced by
+    # the disk-setup screens before we start matching "utoinstall or"
+    # (otherwise it would match the lingering first menu immediately and we'd
+    # shut the VM down mid-install). The sets install takes minutes, so 60s
+    # cannot overshoot into a real reboot.
+    time.sleep(60)
+    waitForText("utoinstall or")
     if isRunning() == 0:
         if shutdownVM() != 0:
             log("shutdown error")
