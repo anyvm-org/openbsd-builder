@@ -1125,23 +1125,59 @@ def setup(install_ocr=None):
             # Actions) lack, so `import cv2` raises ImportError there. cv2 is
             # used by ocr_py and transitively by paddleocr, so a clean import
             # matters either way.
-            if _sh_quiet("pip3 install -q --break-system-packages "
+            pip = sys.executable + " -m pip install -q"
+            if _sh_quiet(pip + " --break-system-packages "
                          "pytesseract opencv-python-headless vncdotool") != 0:
-                _sh_quiet("pip3 install -q pytesseract opencv-python-headless vncdotool")
+                _sh_quiet(pip + " pytesseract opencv-python-headless vncdotool")
             if env("VM_OCR") == "paddle":
                 # Neural OCR (see ocr_paddle) for installer dialogs whose dim /
                 # low-contrast text tesseract cannot read. Install the engine,
                 # then warm it once so the PP-OCRv5 mobile models download here
                 # during setup rather than stalling the first waitForText poll.
-                if _sh_quiet("pip3 install -q --break-system-packages "
+                # Use `sys.executable -m pip`, not bare `pip3`: on GitHub
+                # runners pip3 and the python3 running build.py can resolve to
+                # different interpreters / site-packages.
+                if _sh_quiet(pip + " --break-system-packages "
                              "paddlepaddle paddleocr") != 0:
-                    _sh_quiet("pip3 install -q paddlepaddle paddleocr")
+                    _sh_quiet(pip + " paddlepaddle paddleocr")
+                # pip lands paddle in the user site-packages
+                # (~/.local/lib/pythonX.Y/site-packages). On a fresh CI runner
+                # that directory does not exist when this interpreter starts, so
+                # site.py never puts it on sys.path; pip then creates it mid-run,
+                # but this process's sys.path is already fixed, so every
+                # `import paddleocr` fails with ModuleNotFoundError even though
+                # pip returned 0 (exactly the CI failure: all OCR fell back to
+                # tesseract and hung at the hostname dialog). Add the user site
+                # to THIS process's path and clear the import caches so the
+                # warm-up below and every later ocr_paddle in this same run can
+                # import it.
                 try:
-                    import cv2, numpy
+                    import site, importlib
+                    us = site.getusersitepackages()
+                    if us:
+                        site.addsitedir(us)        # process any .pth there
+                        # Put user site at the FRONT, not the end: a stale apt
+                        # dep already on sys.path (e.g. an old typing_extensions
+                        # in dist-packages) would otherwise shadow the newer one
+                        # pip just installed for paddle. This restores the
+                        # priority site.py would have given it had the dir
+                        # existed at interpreter startup.
+                        if us in sys.path:
+                            sys.path.remove(us)
+                        sys.path.insert(0, us)
+                    importlib.invalidate_caches()
+                except Exception as e:
+                    log("setup: could not add user site to sys.path (%s)" % e)
+                try:
+                    import importlib.util, cv2, numpy
                     cv2.imwrite("/tmp/_paddle_warm.png",
                                 numpy.full((60, 200, 3), 255, numpy.uint8))
                     ocr_paddle("/tmp/_paddle_warm.png")
-                    log("setup: PaddleOCR ready (models cached)")
+                    if importlib.util.find_spec("paddleocr") is not None:
+                        log("setup: PaddleOCR ready (models cached)")
+                    else:
+                        log("setup: WARNING paddleocr not importable after "
+                            "install; OCR falls back to tesseract")
                 except Exception as e:
                     log("setup: PaddleOCR warm-up failed (%s)" % e)
             vp = os.path.join(HOME, ".local", "bin", "vncdotool")
@@ -1671,26 +1707,45 @@ def addNAT(proto=None, hostPort=None, vmPort=None):
     return 0
 
 
-def exportOVA(ova=None, xml=None):
+def exportOVA(ova=None, qemu_args=None):
     osname = _check_osname("exportOVA")
     if not osname: return 1
     if not ova:
-        log("Usage: exportOVA out.qcow2 [out.xml]"); return 1
+        log("Usage: exportOVA out.qcow2 [out.qemu]"); return 1
     src = "%s.qcow2" % osname
     log(src)
-    run(["qemu-img", "convert", "-O", "qcow2", "-o", "preallocation=off", src, ova])
+    # Stage 1: qemu-img convert the work disk into a fresh, compacted /
+    # sparsified qcow2 at the release path. qemu-img refuses to use the same
+    # file as both input and output, so we write to `ova` and swap below.
+    # Peak disk during this step: src + ova (~2x the qcow2 size, briefly).
+    run(["qemu-img", "convert", "-O", "qcow2", "-S", "4k",
+         "-o", "preallocation=off", src, ova])
+    # Stage 2: drop the original work disk and move the converted one into
+    # its place. After this we hold a single qcow2 file (~1x), and the
+    # downstream verification VM (started later in main()) still boots from
+    # the same `<osname>.qcow2` path it always did. Without this swap, zstd
+    # below runs with src + ova + the growing .zst chunks all on disk
+    # simultaneously (~2.25x peak), which trips the runner's free-space
+    # margin for the bigger images.
+    try: os.remove(src)
+    except OSError: pass
+    os.rename(ova, src)
+    # Stage 3: stream-compress the single remaining qcow2 to the release
+    # `<output>.qcow2.zst[.N]`. split keeps any future >2GB build's chunks
+    # under GitHub's release-asset size cap; single-chunk case renames
+    # .zst.0 -> .zst so consumers just `zstd -d` the one file.
     sh("zstd -c %s | split -b 2000M -d -a 1 - %s"
-       % (shlex.quote(ova), shlex.quote(ova + ".zst.")))
+       % (shlex.quote(src), shlex.quote(ova + ".zst.")))
     run(["ls", "-lah"])
     try: os.rename(ova + ".zst.0", ova + ".zst")
     except OSError: pass
     sh("chmod +r %s* 2>/dev/null || true" % shlex.quote(ova + ".zst"))
-    if xml:
+    if qemu_args:
         cl = state(osname, "cmdline")
         if os.path.exists(cl):
-            shutil.copy(cl, xml)
+            shutil.copy(cl, qemu_args)
         else:
-            with open(xml, "w") as f:
+            with open(qemu_args, "w") as f:
                 f.write("# no launch descriptor recorded for %s\n" % osname)
     return 0
 
@@ -2507,9 +2562,9 @@ def main(argv):
     log("free space:"); sh("df -h")
 
     ova = "%s.qcow2" % output
-    xml = "%s.xml" % output
+    qemu_args = "%s.qemu" % output
     log("Exporting %s" % ova)
-    exportOVA(ova, xml)
+    exportOVA(ova, qemu_args)
 
     shutil.copy(os.path.join(HOME, ".ssh", "id_rsa"), "%s-host.id_rsa" % output)
     log("contents after export:"); sh("ls -lah")
