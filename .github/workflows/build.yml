@@ -39,7 +39,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: ["7.7", "7.7-aarch64", "7.7-riscv64", "7.8", "7.8-aarch64", "7.8-riscv64", "7.9", "7.9-aarch64", "7.9-riscv64", "7.9-xfce", "7.9-gnome", "7.9-kde6", "7.9-mate", "7.9-lxqt", "7.9-lumina", "7.9-enlightenment"]
+        os: ["7.7", "7.7-aarch64", "7.7-riscv64", "7.8", "7.8-aarch64", "7.8-riscv64", "7.9", "7.9-aarch64", "7.9-riscv64", "7.9-sparc64", "7.9-xfce", "7.9-gnome", "7.9-kde6", "7.9-mate", "7.9-lxqt", "7.9-lumina", "7.9-enlightenment"]
     runs-on: ubuntu-24.04
     steps:
 #    - name: Free Disk Space (Ubuntu)
@@ -90,5 +90,44 @@ jobs:
           openbsd-${{ matrix.os }}-id_rsa.pub
           openbsd-${{ matrix.os }}-host.id_rsa
           openbsd-${{ matrix.os }}.qemu
+
+
+
+
+
+
+
+
+
+
+  # Publish the patched OpenBIOS blob committed under bios/ (the firmware
+  # OpenBSD sparc64 guests need at run time; see bios/README.md) as a
+  # release asset, so downstream consumers (anyvm's runtime, end users)
+  # fetch it from the release alongside the VM images instead of from
+  # raw.githubusercontent.
+  # A single job, NOT part of the build matrix: every matrix job uploading
+  # the same asset name in parallel would race (GitHub rejects duplicate
+  # asset names), and the upload should not depend on any one image build
+  # succeeding. Injected via UPLOAD_FILES_JOB in .github/data/datafile.ini;
+  # builders without extra release files simply omit that key and the
+  # template placeholder renders empty.
+  release-files:
+    if: "contains(github.ref, 'refs/tags/')"
+    runs-on: ubuntu-24.04
+    steps:
+    - uses: actions/checkout@v6
+    - name: Upload bios/ Release Assets
+      uses: softprops/action-gh-release@v3
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        files: |
+          bios/openbios-sparc64.elf
+
+
+
+
+
+
 
 
