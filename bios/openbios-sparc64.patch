@@ -1,0 +1,49 @@
+diff --git a/config/examples/sparc64_config.xml b/config/examples/sparc64_config.xml
+index a4172df..09fa6fc 100644
+--- a/config/examples/sparc64_config.xml
++++ b/config/examples/sparc64_config.xml
+@@ -63,6 +63,7 @@
+   <option name="CONFIG_DEBUG_PCI" type="boolean" value="false"/>
+   <option name="CONFIG_DRIVER_IDE" type="boolean" value="true"/>
+   <option name="CONFIG_IDE_NUM_CHANNELS" type="integer" value="2"/>
++  <option name="CONFIG_IDE_DEV_NAME" type="string" value="ata"/>
+   <option name="CONFIG_DEBUG_IDE" type="boolean" value="false"/>
+   <option name="CONFIG_DRIVER_FLOPPY" type="boolean" value="true"/>
+   <option name="CONFIG_DEBUG_FLOPPY" type="boolean" value="false"/>
+diff --git a/config/scripts/switch-arch b/config/scripts/switch-arch
+index b5acc6c..03d8678 100755
+--- a/config/scripts/switch-arch
++++ b/config/scripts/switch-arch
+@@ -290,7 +290,7 @@ for ARCH in $arch_list; do
+ 
+         sparc64)
+         select_prefix sparc64
+-        CFLAGS="-Wa,-xarch=v9b -Wa,-64 -m64 -mcpu=ultrasparc -mcmodel=medany -fno-builtin"
++        CFLAGS="-Wa,-xarch=v9b -Wa,-64 -m64 -mcpu=ultrasparc -mcmodel=medany -fno-builtin -fno-stack-protector -fno-pic"
+         AS_FLAGS="-Wa,-xarch=v9b -Wa,-64"
+         ;;
+ 
+diff --git a/libopenbios/client.c b/libopenbios/client.c
+old mode 100644
+new mode 100755
+index 8b3d582..4f04d72
+--- a/libopenbios/client.c
++++ b/libopenbios/client.c
+@@ -272,8 +272,15 @@ handle_calls(prom_args_t *pb)
+ 		return 0;
+ 	}
+ 
+-	/* Store catch result */
+-	pb->args[pb->nargs] = val;
++	/* Store catch result, but only if the client asked for at least one
++	 * return cell. Writing it unconditionally clobbers the cell right
++	 * after the client's argument array; IEEE 1275 clients that invoke
++	 * "call-method" with nreturns == 0 (e.g. the OpenBSD/sparc64 >= 7.3
++	 * kernel and ofwboot calling the MMU "map" method) keep their args
++	 * struct exactly nargs cells long, so the stray store corrupts the
++	 * caller's stack frame. */
++	if (pb->nret > 0)
++		pb->args[pb->nargs] = val;
+ 	
+ 	j = dstackcnt;
+ 	for (i = 1; i < pb->nret; i++, j--) {

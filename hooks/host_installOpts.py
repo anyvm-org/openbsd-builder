@@ -37,6 +37,11 @@ time.sleep(2)
 # real prompt was never answered -> the install hung forever. Only the
 # install/upgrade prompt ends in "Upgrade?"; in the first menu it is
 # "Upgrade," (comma), so "pgrade?" matches the right screen unambiguously.
+#
+# Why this prompt always appears here: autoinstall infers the mode from the
+# response file NAME (install.conf vs upgrade.conf). Our files are named
+# openbsd-<release>.resp, so the installer prints "Could not determine auto
+# mode." and asks -- on every arch, serial and VNC alike.
 waitForText("pgrade?")
 string("i")
 enter()
@@ -63,7 +68,19 @@ if env("VM_ARCH") == "riscv64":
         if destroyVM() != 0:
             log("destroyVM error")
 
-if env("VM_ARCH") not in ("aarch64", "riscv64"):
+if env("VM_ARCH") == "sparc64":
+    # Console build: the serial log is cumulative, so the success banner is
+    # a reliable signal (no VNC/OCR 3s-poll race here). autoinstall reboots
+    # on its own after the banner and -boot order=d would land back in the
+    # installer's first menu, so force the VM down as soon as it shows.
+    waitForText("Your OpenBSD install has been successfully completed")
+    if isRunning() == 0:
+        if shutdownVM() != 0:
+            log("shutdown error")
+        if destroyVM() != 0:
+            log("destroyVM error")
+
+if env("VM_ARCH") not in ("aarch64", "riscv64", "sparc64"):
     # amd64 / default x86 (VNC build). OpenBSD autoinstall installs the sets
     # and then REBOOTS -- it never powers off -- and the install ISO is still
     # first in the boot order (-boot order=dc), so the reboot lands back in
