@@ -1,9 +1,17 @@
 # Patched OpenBIOS for OpenBSD/sparc64 under QEMU sun4u
 
-`openbios-sparc64.elf` (md5 `a252db80f6b7ec9d2ebaab478191ab4e`) replaces the
-OpenBIOS image bundled with QEMU. The sparc64 build pipeline passes it via
-`-bios` (conf sets `VM_BIOS="bios/openbios-sparc64.elf"`), and any runtime
-that boots the produced qcow2 must do the same.
+`openbios-sparc64.elf` replaces the OpenBIOS image bundled with QEMU. The
+sparc64 build pipeline passes it via `-bios` (conf sets
+`VM_BIOS="bios/openbios-sparc64.elf"`), and any runtime that boots the
+produced qcow2 must do the same.
+
+The binary is NOT committed to git -- this directory carries the patch
+(the actual fix) and `build-openbios.sh`, which compiles the blob from
+the pinned upstream revision. `hooks/host_beforeBuild.sh` runs the script
+at the start of an image build when the blob is missing, and the
+`release-files` job (.github/data/uploadfiles.yml) runs it before
+publishing `openbios-sparc64.elf` as a release asset, which is where
+anyvm's runtime downloads it from.
 
 ## Why a patched firmware is required
 
@@ -50,18 +58,17 @@ See `openbios-sparc64.patch` for the full diff:
    `-fno-pic`, modern Debian/Ubuntu cross compilers emit PIC code and the
    resulting firmware traps at PC=0 immediately.
 
-## Rebuilding
+## Building
 
 On Ubuntu (24.04 verified):
 
-    apt-get install gcc-sparc64-linux-gnu fcode-utils xsltproc
-    git clone https://github.com/openbios/openbios.git
-    cd openbios
-    git checkout af97fd7af5e7c18f591a7b987291d3db4ffb28b5
-    git apply ../openbios-sparc64.patch
-    ./config/scripts/switch-arch cross-sparc64
-    make
-    # result: obj-sparc64/openbios-builtin.elf
+    bash bios/build-openbios.sh
+    # result: bios/openbios-sparc64.elf
+
+The script installs the sparc64-linux-gnu cross toolchain, fetches
+upstream OpenBIOS at `af97fd7af5e7c18f591a7b987291d3db4ffb28b5`, applies
+`openbios-sparc64.patch`, builds (switch-arch cross-sparc64 + make) and
+copies `obj-sparc64/openbios-builtin.elf` into place.
 
 OpenBIOS is GPLv2; the complete corresponding source is the upstream
 repository at the revision above plus `openbios-sparc64.patch` in this
