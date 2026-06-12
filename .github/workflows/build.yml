@@ -100,11 +100,13 @@ jobs:
 
 
 
-  # Publish the patched OpenBIOS blob committed under bios/ (the firmware
-  # OpenBSD sparc64 guests need at run time; see bios/README.md) as a
-  # release asset, so downstream consumers (anyvm's runtime, end users)
-  # fetch it from the release alongside the VM images instead of from
-  # raw.githubusercontent.
+  # Publish the patched OpenBIOS blob (the firmware OpenBSD sparc64 guests
+  # need at run time; see bios/README.md) as a release asset, so downstream
+  # consumers (anyvm's runtime, end users) fetch it from the release
+  # alongside the VM images. The binary is NOT committed to git: bios/
+  # only carries the patch and build-openbios.sh, which compiles the blob
+  # from the pinned upstream revision right here (the same script
+  # hooks/host_beforeBuild.sh uses during image builds).
   # A single job, NOT part of the build matrix: every matrix job uploading
   # the same asset name in parallel would race (GitHub rejects duplicate
   # asset names), and the upload should not depend on any one image build
@@ -116,6 +118,8 @@ jobs:
     runs-on: ubuntu-24.04
     steps:
     - uses: actions/checkout@v6
+    - name: Build the OpenBIOS blob
+      run: bash bios/build-openbios.sh
     - name: Upload bios/ Release Assets
       uses: softprops/action-gh-release@v3
       env:
