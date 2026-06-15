@@ -8,6 +8,28 @@ pkg_info -e  sshfs-fuse-*
 sed -i 's|$2b$10$qS3/zFLn/6wTQrjNhAddEepvKw.XculyRsXH60FLXjcj5fQeZzIQu||' /etc/master.passwd
 pwd_mkdb -p /etc/master.passwd
 
+# OpenBSD/sparc64 only: disable disk DMA and force PIO on the root disk.
+# Under QEMU's sun4u cmd646 PCI-IDE, concurrent DMA on the two channels
+# (disk write + network during boot, or CD read + disk write during install)
+# wedges the controller into a sustained "lost interrupt" write-timeout storm
+# that stalls boot and shutdown -- fatal for the anyvm runtime boot probe.
+# GENERIC sets `wd* at pciide*` (UKC config entry 91 in 7.9/sparc64 GENERIC)
+# flags 0xa00 = force UltraDMA mode 2; rewrite to 0x0ffc = PIO mode 4, no DMA,
+# no UltraDMA. config(8) -e reads its UKC commands from stdin, so a here-doc
+# drives it non-interactively; the blank line takes the "channel" locator
+# default. The entry number is GENERIC-layout-specific: if the OpenBSD release
+# changes, re-derive it with `config -e -f /bsd` then `find wd*`. Verified
+# afterwards as "wd0(pciide0:0:0): using PIO mode 4" (no Ultra-DMA).
+if [ "$(uname -m)" = "sparc64" ]; then
+  config -e -f /bsd <<'UKC'
+change 91
+y
+
+0xffc
+quit
+UKC
+fi
+
 # Zero unused disk space on filesystems that have had activity, so the
 # exported qcow2 compresses well. amd64 only: the TCG arches (arm64,
 # riscv64, sparc64) write at emulated-disk speed and this step would

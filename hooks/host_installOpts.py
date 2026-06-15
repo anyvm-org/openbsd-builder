@@ -18,6 +18,37 @@
 # globals -- waitForText / string / enter / isRunning / shutdownVM /
 # destroyVM / env / time / log are bare names.
 
+if env("VM_ARCH") == "sparc64":
+    # sparc64 install runs with the RAMDISK kernel in UKC: build.py passes
+    # boot-file="bsd -c" to OpenBIOS for the openbsd/sparc64 install, so the
+    # kernel stops in its User Kernel Config editor before autoconfiguration.
+    # Force the root disk (wd* at pciide*, RAMDISK config entry 68) to PIO
+    # mode 4 / no DMA / no UltraDMA (flags 0x0ffc), so the install's concurrent
+    # CD-read + disk-write does NOT wedge QEMU's sun4u cmd646 PCI-IDE into a
+    # sustained "lost interrupt" write-timeout storm (which otherwise stalls
+    # the install for the better part of an hour). The same flag is baked into
+    # the installed /bsd by hooks/vm_finalize.sh (GENERIC entry 91) for the
+    # runtime boot.
+    #
+    # Prompt quirks: the UKC prompt is "UKC>" (uppercase); the "change (y/n) ?"
+    # confirm reads a SINGLE CHARACTER, so send "y" with NO enter (an extra CR
+    # desyncs the channel/flags prompts that follow). Anchors use the bracketed
+    # prompt forms ("channel [-1]", "flags [0xa00]") so they do not match the
+    # device-display line ("channel -1 flags 0xa00", no brackets).
+    waitForText("UKC>")
+    string("change 68")
+    enter()
+    waitForText("(y/n)")
+    string("y")
+    waitForText("channel [-1]")
+    enter()
+    waitForText("flags [0xa00]")
+    string("0xffc")
+    enter()
+    waitForText("changed")
+    string("quit")
+    enter()
+
 waitForText("nstall, (")
 string("a")
 enter()
