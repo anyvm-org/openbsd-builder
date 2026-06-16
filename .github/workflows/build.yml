@@ -68,6 +68,7 @@ jobs:
           openbsd-${{ matrix.os }}-id_rsa.pub
           openbsd-${{ matrix.os }}-host.id_rsa
           openbsd-${{ matrix.os }}.qemu
+          openbsd-${{ matrix.os }}.profile.json
         if-no-files-found: warn
         # qcow2.zst is already maximally compressed; gzip-recompressing the
         # bundle just burns CPU for ~0 savings.
@@ -90,6 +91,7 @@ jobs:
           openbsd-${{ matrix.os }}-id_rsa.pub
           openbsd-${{ matrix.os }}-host.id_rsa
           openbsd-${{ matrix.os }}.qemu
+          openbsd-${{ matrix.os }}.profile.json
 
 
 
