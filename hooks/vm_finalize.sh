@@ -20,7 +20,23 @@ pwd_mkdb -p /etc/master.passwd
 # default. The entry number is GENERIC-layout-specific: if the OpenBSD release
 # changes, re-derive it with `config -e -f /bsd` then `find wd*`. Verified
 # afterwards as "wd0(pciide0:0:0): using PIO mode 4" (no Ultra-DMA).
+#
+# CRITICAL ordering vs KARL: OpenBSD relinks /bsd at boot (reorder_kernel) to
+# randomize the kernel layout. That relink rebuilds /bsd from the original
+# object files -- WITHOUT our flag -- and installs it over /bsd. On sparc64
+# under TCG the relink is slow (~7 min) and can finish AFTER this config -e,
+# silently reverting /bsd to DMA, so the exported image storms on its first
+# (verify / runtime) boot. Wait for any in-flight relink to finish FIRST, so
+# our config -e is the last write to /bsd. (Cap the wait so a stuck relink
+# cannot hang the build forever.)
 if [ "$(uname -m)" = "sparc64" ]; then
+  _i=0
+  while ps axww 2>/dev/null | grep -qE '[r]eorder_kernel|[m]ake new'; do
+    echo "finalize: waiting for KARL kernel relink to finish ($_i)"
+    sleep 10
+    _i=$((_i + 1))
+    [ "$_i" -ge 120 ] && { echo "finalize: relink wait cap hit, proceeding"; break; }
+  done
   config -e -f /bsd <<'UKC'
 change 91
 y
@@ -28,6 +44,25 @@ y
 0xffc
 quit
 UKC
+  # Disable OpenBSD's first-boot reordering. Even with the disk on PIO, the
+  # heavy concurrent disk I/O of the boot-time ld.so/libc library reorder
+  # ("reordering: ..." in /etc/rc, gated by library_aslr) by itself wedges
+  # QEMU's sun4u cmd646 into wd0 command timeouts, so the freshly-shipped
+  # image never becomes ssh-reachable on its first (verify / runtime) boot.
+  # The kernel relink (KARL, /usr/libexec/reorder_kernel, run unconditionally
+  # at the end of /etc/rc) does the same heavy I/O AND rebuilds /bsd from the
+  # original objects, reverting the PIO flag set just above. Turn both off:
+  #   * library_aslr=NO  -> reorder_libs() returns early.
+  #   * move the kernel relink kit aside -> reorder_kernel finds nothing.
+  # The first boot then does minimal disk I/O and comes up clean, and /bsd
+  # stays permanently PIO. ASLR is a security feature; disabling it is an
+  # accepted tradeoff for a throwaway QEMU sun4u test image that otherwise
+  # cannot boot. (sparc64 only.)
+  grep -q '^library_aslr=NO' /etc/rc.conf.local 2>/dev/null || \
+      echo 'library_aslr=NO' >> /etc/rc.conf.local
+  if [ -d /usr/share/relink/kernel ]; then
+    mv /usr/share/relink/kernel /usr/share/relink/kernel.disabled
+  fi
 fi
 
 # Zero unused disk space on filesystems that have had activity, so the
