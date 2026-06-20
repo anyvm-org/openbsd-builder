@@ -12,7 +12,9 @@
   # builders without extra release files simply omit that key and the
   # template placeholder renders empty.
   release-files:
-    if: "contains(github.ref, 'refs/tags/')"
+    # Gate on the event, not github.ref: a 'release' event's github.ref can be
+    # refs/heads/<branch>, which silently skips the upload. event_name is stable.
+    if: "github.event_name == 'release' || startsWith(github.ref, 'refs/tags/')"
     runs-on: ubuntu-24.04
     steps:
     - uses: actions/checkout@v6
@@ -23,5 +25,9 @@
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       with:
+        # Pass the tag explicitly: action-gh-release derives it from github.ref
+        # by default, but on a 'release' event that can be a branch ref, failing
+        # with "GitHub Releases requires a tag".
+        tag_name: ${{ github.event.release.tag_name || github.ref_name }}
         files: |
           bios/openbios-sparc64.elf
