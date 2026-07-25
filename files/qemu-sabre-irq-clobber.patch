@@ -1,0 +1,21 @@
+--- a/hw/pci-host/sabre.c
++++ b/hw/pci-host/sabre.c
+@@ -308,7 +308,17 @@
+     if (irq_num < 32) {
+         if (level) {
+             s->pci_irq_in |= 1ULL << irq_num;
+-            if (s->pci_irq_map[irq_num >> 2] & PBM_PCI_IMR_ENABLED) {
++            /* Do not overwrite an outstanding request for a DIFFERENT ino:
++             * irq_request is a single slot, and clobbering it makes the
++             * guest's later interrupt-clear write (which must match
++             * irq_request) a silent no-op, permanently wedging both
++             * devices' interrupts (seen as NetBSD/OpenBSD "lost interrupt"
++             * storms when disk and NIC DMA complete concurrently). The
++             * level is latched in pci_irq_in; sabre_check_irqs() will
++             * submit it once the current request is acknowledged. */
++            if ((s->pci_irq_map[irq_num >> 2] & PBM_PCI_IMR_ENABLED) &&
++                (s->irq_request == NO_IRQ_REQUEST ||
++                 s->irq_request == irq_num)) {
+                 sabre_set_request(s, irq_num);
+             }
+         } else {

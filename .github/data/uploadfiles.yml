@@ -1,10 +1,21 @@
-  # Publish the patched OpenBIOS blob (the firmware OpenBSD sparc64 guests
-  # need at run time; see bios/README.md) as a release asset, so downstream
-  # consumers (anyvm's runtime, end users) fetch it from the release
-  # alongside the VM images. The binary is NOT committed to git: bios/
-  # only carries the patch and build-openbios.sh, which compiles the blob
-  # from the pinned upstream revision right here (the same script
-  # hooks/host_beforeBuild.sh uses during image builds).
+  # Publish the two binaries OpenBSD sparc64 guests need at run time, as
+  # release assets beside the VM images, so downstream consumers (anyvm's
+  # runtime, end users) fetch them from THIS builder's release:
+  #   * openbios-sparc64.elf -- patched sun4u firmware (see bios/README.md);
+  #     QEMU's bundled OpenBIOS crashes every OpenBSD >= 7.3 sparc64 kernel
+  #     on cold boot.
+  #   * qemu-10.2.3-sparc64-noble.tar.zst -- qemu-system-sparc64 plus
+  #     files/qemu-sabre-irq-clobber.patch. Every upstream QEMU carries the
+  #     sun4u sabre IRQ-clobber bug, which strands OpenBSD sparc64 as
+  #     "wd0(pciide0:0:0): timeout" on the disk side and "em0: watchdog" on
+  #     the NIC side once their DMA overlaps.
+  # Neither binary is committed to git: bios/ and files/ carry only the
+  # patches and the build scripts, which compile both from pinned upstream
+  # sources right here (the same scripts hooks/host_beforeBuild.sh uses
+  # during image builds, so what ships is what the images were verified on).
+  # Self-contained on purpose: a sibling builder publishes an identical
+  # patched QEMU for its own guests, and we deliberately do NOT reuse it --
+  # deleting any one builder must not affect any other builder or VM action.
   # A single job, NOT part of the build matrix: every matrix job uploading
   # the same asset name in parallel would race (GitHub rejects duplicate
   # asset names), and the upload should not depend on any one image build
@@ -20,7 +31,9 @@
     - uses: actions/checkout@v6
     - name: Build the OpenBIOS blob
       run: bash bios/build-openbios.sh
-    - name: Upload bios/ Release Assets
+    - name: Build the patched sparc64 QEMU
+      run: bash files/build-qemu-sparc64.sh build
+    - name: Upload bios/ and files/ Release Assets
       uses: softprops/action-gh-release@v3
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -31,3 +44,4 @@
         tag_name: ${{ github.event.release.tag_name || github.ref_name }}
         files: |
           bios/openbios-sparc64.elf
+          build/qemu-10.2.3-sparc64-noble.tar.zst
