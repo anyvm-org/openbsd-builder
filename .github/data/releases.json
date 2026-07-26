@@ -1,0 +1,230 @@
+{
+  "os": "openbsd",
+  "releases": [
+    {
+      "tag": "7.3",
+      "release": "7.3",
+      "arch": "x86_64",
+      "sync": "rsync,scp,sshfs,nfs",
+      "shutdown": "/sbin/shutdown -p now",
+      "desktop": false,
+      "build": false
+    },
+    {
+      "tag": "7.3-aarch64",
+      "release": "7.3",
+      "arch": "aarch64",
+      "sync": "rsync,scp,sshfs,nfs",
+      "shutdown": "/sbin/shutdown -p now",
+      "desktop": false,
+      "build": false
+    },
+    {
+      "tag": "7.4",
+      "release": "7.4",
+      "arch": "x86_64",
+      "sync": "rsync,scp,sshfs,nfs",
+      "shutdown": "/sbin/shutdown -p now",
+      "desktop": false,
+      "build": false
+    },
+    {
+      "tag": "7.4-aarch64",
+      "release": "7.4",
+      "arch": "aarch64",
+      "sync": "rsync,scp,sshfs,nfs",
+      "shutdown": "/sbin/shutdown -p now",
+      "desktop": false,
+      "build": false
+    },
+    {
+      "tag": "7.5",
+      "release": "7.5",
+      "arch": "x86_64",
+      "sync": "rsync,scp,sshfs,nfs",
+      "shutdown": "/sbin/shutdown -p now",
+      "desktop": false,
+      "build": false
+    },
+    {
+      "tag": "7.5-aarch64",
+      "release": "7.5",
+      "arch": "aarch64",
+      "sync": "rsync,scp,sshfs,nfs",
+      "shutdown": "/sbin/shutdown -p now",
+      "desktop": false,
+      "build": false
+    },
+    {
+      "tag": "7.6",
+      "release": "7.6",
+      "arch": "x86_64",
+      "sync": "rsync,scp,sshfs,nfs",
+      "shutdown": "/sbin/shutdown -p now",
+      "desktop": false,
+      "build": false
+    },
+    {
+      "tag": "7.6-aarch64",
+      "release": "7.6",
+      "arch": "aarch64",
+      "sync": "rsync,scp,sshfs,nfs",
+      "shutdown": "/sbin/shutdown -p now",
+      "desktop": false,
+      "build": false
+    },
+    {
+      "tag": "7.7",
+      "release": "7.7",
+      "arch": "x86_64",
+      "sync": "rsync,scp,sshfs,nfs",
+      "shutdown": "/sbin/shutdown -p now",
+      "desktop": false,
+      "build": true
+    },
+    {
+      "tag": "7.7-aarch64",
+      "release": "7.7",
+      "arch": "aarch64",
+      "sync": "rsync,scp,sshfs,nfs",
+      "shutdown": "/sbin/shutdown -p now",
+      "desktop": false,
+      "build": true
+    },
+    {
+      "tag": "7.7-riscv64",
+      "release": "7.7",
+      "arch": "riscv64",
+      "sync": "rsync,scp,sshfs,nfs",
+      "shutdown": "/sbin/shutdown -p now",
+      "desktop": false,
+      "build": true
+    },
+    {
+      "tag": "7.8",
+      "release": "7.8",
+      "arch": "x86_64",
+      "sync": "rsync,scp,sshfs,nfs",
+      "shutdown": "/sbin/shutdown -p now",
+      "desktop": false,
+      "build": true
+    },
+    {
+      "tag": "7.8-aarch64",
+      "release": "7.8",
+      "arch": "aarch64",
+      "sync": "rsync,scp,sshfs,nfs",
+      "shutdown": "/sbin/shutdown -p now",
+      "desktop": false,
+      "build": true
+    },
+    {
+      "tag": "7.8-riscv64",
+      "release": "7.8",
+      "arch": "riscv64",
+      "sync": "rsync,scp,sshfs,nfs",
+      "shutdown": "/sbin/shutdown -p now",
+      "desktop": false,
+      "build": true
+    },
+    {
+      "tag": "7.9",
+      "release": "7.9",
+      "arch": "x86_64",
+      "sync": "rsync,scp,sshfs,nfs",
+      "shutdown": "/sbin/shutdown -p now",
+      "desktop": false,
+      "build": true
+    },
+    {
+      "tag": "7.9-aarch64",
+      "release": "7.9",
+      "arch": "aarch64",
+      "sync": "rsync,scp,sshfs,nfs",
+      "shutdown": "/sbin/shutdown -p now",
+      "desktop": false,
+      "build": true
+    },
+    {
+      "tag": "7.9-riscv64",
+      "release": "7.9",
+      "arch": "riscv64",
+      "sync": "rsync,scp,sshfs,nfs",
+      "shutdown": "/sbin/shutdown -p now",
+      "desktop": false,
+      "build": true
+    },
+    {
+      "tag": "7.9-sparc64",
+      "release": "7.9",
+      "arch": "sparc64",
+      "sync": "rsync,scp,sshfs,nfs",
+      "shutdown": "/sbin/shutdown -p now",
+      "desktop": false,
+      "build": true
+    },
+    {
+      "tag": "7.9-enlightenment",
+      "release": "7.9-enlightenment",
+      "arch": "x86_64",
+      "sync": "rsync,scp,sshfs,nfs",
+      "shutdown": "/sbin/shutdown -p now",
+      "desktop": true,
+      "build": true
+    },
+    {
+      "tag": "7.9-gnome",
+      "release": "7.9-gnome",
+      "arch": "x86_64",
+      "sync": "rsync,scp,sshfs,nfs",
+      "shutdown": "/sbin/shutdown -p now",
+      "desktop": true,
+      "build": true
+    },
+    {
+      "tag": "7.9-kde6",
+      "release": "7.9-kde6",
+      "arch": "x86_64",
+      "sync": "rsync,scp,sshfs,nfs",
+      "shutdown": "/sbin/shutdown -p now",
+      "desktop": true,
+      "build": true
+    },
+    {
+      "tag": "7.9-lumina",
+      "release": "7.9-lumina",
+      "arch": "x86_64",
+      "sync": "rsync,scp,sshfs,nfs",
+      "shutdown": "/sbin/shutdown -p now",
+      "desktop": true,
+      "build": true
+    },
+    {
+      "tag": "7.9-lxqt",
+      "release": "7.9-lxqt",
+      "arch": "x86_64",
+      "sync": "rsync,scp,sshfs,nfs",
+      "shutdown": "/sbin/shutdown -p now",
+      "desktop": true,
+      "build": true
+    },
+    {
+      "tag": "7.9-mate",
+      "release": "7.9-mate",
+      "arch": "x86_64",
+      "sync": "rsync,scp,sshfs,nfs",
+      "shutdown": "/sbin/shutdown -p now",
+      "desktop": true,
+      "build": true
+    },
+    {
+      "tag": "7.9-xfce",
+      "release": "7.9-xfce",
+      "arch": "x86_64",
+      "sync": "rsync,scp,sshfs,nfs",
+      "shutdown": "/sbin/shutdown -p now",
+      "desktop": true,
+      "build": true
+    }
+  ]
+}
