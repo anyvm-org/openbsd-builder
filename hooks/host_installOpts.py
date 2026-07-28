@@ -18,6 +18,39 @@
 # globals -- waitForText / string / enter / isRunning / shutdownVM /
 # destroyVM / env / time / log are bare names.
 
+
+def obsd_wait(text, sec):
+    """waitForText that ABORTS the build when the screen never appears.
+
+    Every wait in this hook used to be an unbounded waitForText(text): with no
+    second argument waitForText polls forever, so a guest that panicked or an
+    anchor that stopped matching pinned the job until the 6 h CI ceiling or a
+    human killed it. Sibling builders have burned 2 h, 3.5 h and 5 h 40 m
+    exactly that way (netbsd answer files; midnightbsd 3.2.4, whose install ISO
+    panicked and whose hook then typed the whole install sequence into a dead
+    screen before hanging in the login wait).
+
+    Both halves matter. Bounding alone is not enough: every keystroke after a
+    wait assumes that screen is up, so continuing past a timeout types blind
+    into whatever is actually there, "installs" nothing, and fails much later
+    somewhere unrelated -- burying the real cause.
+
+    Strictness is safe here: across all 17 green jobs of run 30265864696 no
+    anchor in this hook ever timed out (the only timeouts were the best-effort
+    login-tag stage in host_waitForLoginTag.py). The values passed below are
+    crash backstops, not budgets -- sized well above the slowest healthy run on
+    the slowest emulated arch.
+    """
+    if waitForText(text, sec) != 0:
+        log("FATAL: OpenBSD installer never showed this screen: %s" % text)
+        log("       (waited %s s, arch=%s, release=%s)"
+            % (sec, env("VM_ARCH") or "x86_64", env("VM_RELEASE")))
+        log("       The guest most likely panicked, or the installer changed "
+            "and this anchor no longer matches. Check the screen dump above. "
+            "Aborting instead of driving a screen that is not there.")
+        sys.exit(1)
+
+
 if env("VM_ARCH") == "sparc64":
     # sparc64 install runs with the RAMDISK kernel in UKC: build.py passes
     # boot-file="bsd -c" to OpenBIOS for the openbsd/sparc64 install, so the
@@ -35,25 +68,29 @@ if env("VM_ARCH") == "sparc64":
     # desyncs the channel/flags prompts that follow). Anchors use the bracketed
     # prompt forms ("channel [-1]", "flags [0xa00]") so they do not match the
     # device-display line ("channel -1 flags 0xa00", no brackets).
-    waitForText("UKC>")
+    # First wait also covers the sun4u ISO boot into the RAMDISK kernel, which
+    # is slow under TCG; the rest follow a keystroke and come back at once.
+    obsd_wait("UKC>", "900")
     string("change 68")
     enter()
-    waitForText("(y/n)")
+    obsd_wait("(y/n)", "120")
     string("y")
-    waitForText("channel [-1]")
+    obsd_wait("channel [-1]", "120")
     enter()
-    waitForText("flags [0xa00]")
+    obsd_wait("flags [0xa00]", "120")
     string("0xffc")
     enter()
-    waitForText("changed")
+    obsd_wait("changed", "120")
     string("quit")
     enter()
 
-waitForText("nstall, (")
+# On every arch except sparc64 this is the first thing we wait for, so it also
+# covers the ISO boot -- emulated arches (riscv64, powerpc-ish) need room.
+obsd_wait("nstall, (", "900")
 string("a")
 enter()
 
-waitForText("Response file location")
+obsd_wait("Response file location", "300")
 string("http://192.168.122.1:8000/%s" % env("VM_OPTS"))
 enter()
 
@@ -73,14 +110,16 @@ time.sleep(2)
 # response file NAME (install.conf vs upgrade.conf). Our files are named
 # openbsd-<release>.resp, so the installer prints "Could not determine auto
 # mode." and asks -- on every arch, serial and VNC alike.
-waitForText("pgrade?")
+# The response file is fetched over the network before this prompt appears.
+obsd_wait("pgrade?", "600")
 string("i")
 enter()
 
 if env("VM_ARCH") == "aarch64" and env("VM_USE_CONSOLE_BUILD"):
     # 7.3/4 reboot after install; 7.5/6 just shut down. Force shutdown for
     # the reboot case so the pipeline proceeds.
-    waitForText("Your OpenBSD install has been successfully completed")
+    # 2400 s: this waits out the whole sets install, not a screen transition.
+    obsd_wait("Your OpenBSD install has been successfully completed", "2400")
     if isRunning() == 0:
         if shutdownVM() != 0:
             log("shutdown error")
@@ -88,7 +127,8 @@ if env("VM_ARCH") == "aarch64" and env("VM_USE_CONSOLE_BUILD"):
             log("destroyVM error")
 
 if env("VM_ARCH") == "riscv64":
-    waitForText("Your OpenBSD install has been successfully completed")
+    # 2400 s: this waits out the whole sets install, not a screen transition.
+    obsd_wait("Your OpenBSD install has been successfully completed", "2400")
     # halt at the post-install (R)eboot/(S)hell/(H)alt prompt
     string("h")
     enter()
@@ -104,7 +144,8 @@ if env("VM_ARCH") == "sparc64":
     # a reliable signal (no VNC/OCR 3s-poll race here). autoinstall reboots
     # on its own after the banner and -boot order=d would land back in the
     # installer's first menu, so force the VM down as soon as it shows.
-    waitForText("Your OpenBSD install has been successfully completed")
+    # 2400 s: this waits out the whole sets install, not a screen transition.
+    obsd_wait("Your OpenBSD install has been successfully completed", "2400")
     if isRunning() == 0:
         if shutdownVM() != 0:
             log("shutdown error")
@@ -134,7 +175,9 @@ if env("VM_ARCH") not in ("aarch64", "riscv64", "sparc64"):
     # shut the VM down mid-install). The sets install takes minutes, so 60s
     # cannot overshoot into a real reboot.
     time.sleep(60)
-    waitForText("utoinstall or")
+    # 2400 s: this waits out the whole sets install AND the post-install
+    # reboot, not a screen transition.
+    obsd_wait("utoinstall or", "2400")
     if isRunning() == 0:
         if shutdownVM() != 0:
             log("shutdown error")
