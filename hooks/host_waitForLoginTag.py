@@ -32,8 +32,25 @@ time.sleep(10)
 # applies neither VM_LOGIN_MAX_SECONDS nor its force-kill-and-reboot reroll
 # here. Returning after a failed wait would march the pipeline on against a VM
 # that never booted.
-if waitForText("logi", "300") != 0:
-    log("FATAL: guest never reached a login prompt (no 'logi' on the console).")
+#
+# The ceiling MUST be per-arch. Measured wall-clock from "Waiting for text:
+# logi" to the prompt, across green runs 30265864696 and 30224606954:
+#
+#   amd64 (incl. every desktop conf) :   31 -  141 s
+#   riscv64                          :   99 -  109 s
+#   aarch64                          :  622 - 1070 s   <-- 10x the rest
+#
+# OpenBSD's arm64 first boot does fsck + the whole rc + sshd keygen under
+# plain TCG (no KVM on the runners), and it is simply that slow. A flat 300 s
+# looked generous against "always found" but was never checked against how
+# LONG it took, and it killed all three aarch64 builds of run 30321977470
+# while every other arch stayed green. These numbers are crash backstops, not
+# performance budgets: size them well above the worst observed run.
+obsd_login_max = "2400" if (env("VM_ARCH") or "") == "aarch64" else "600"
+if waitForText("logi", obsd_login_max) != 0:
+    log("FATAL: guest never reached a login prompt in %s s "
+        "(no 'logi' on the console, arch=%s)."
+        % (obsd_login_max, env("VM_ARCH") or "x86_64"))
     log("       The install most likely failed or the guest panicked -- check "
         "the screen dump above for 'panic:' or 'not a bootable disk'.")
     sys.exit(1)
