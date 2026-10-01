@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# Print the newest OpenBSD release directory, e.g. "7.9". Empty output
+# Print the newest PUBLISHED OpenBSD release, e.g. "7.9". Empty output
 # means "nothing detected" and is not an error; a non-zero exit means
 # detection itself is broken (network error, HTTP error, or a page that
 # no longer matches the expected shape) and must be reported by the
@@ -24,14 +24,38 @@
 # 7.9, never 7.9.1), so the pattern intentionally has no third segment.
 # At fetch time the newest real entry was 7.9.
 #
-# stdlib only (urllib.request, re, sys, os) -- no external dependencies.
+# A RELEASE DIRECTORY IS NOT A RELEASE. OpenBSD creates the next
+# release's directory weeks before the release, to stage its packages:
+# on 2026-10-01 "8.0/" was listed in the index but held nothing except
+# "packages/" -- no amd64/, no SHA256, no install media. The previous
+# version of this hook printed the bare directory name, so watch.py
+# modelled 8.0 confs on 7.9, every derived install80.iso/.img URL got
+# HTTP 404 at the HEAD gate, the run went red and filed an issue
+# (https://github.com/anyvm-org/openbsd-builder/actions/runs/36794686189).
+# That would repeat every night until the real 8.0 release.
+#
+# So a version only counts once its amd64 install ISO -- the media the
+# base conf (openbsd-<ver>.conf) installs from -- answers. A clean 404
+# means "staged, not released": that version is skipped and the next
+# newest one is considered, which already has confs, so the run stays
+# green and quiet until the media appears. Any other failure (another
+# HTTP status, a network error) is broken detection and exits non-zero.
+# OpenBSD publishes every platform of a release together, so amd64 is
+# the marker; if another arch were ever late, the HEAD gate still
+# catches it for that one night, which is a real signal.
+#
+# stdlib only (urllib.request, urllib.error, re, sys, os) -- no external
+# dependencies.
 
 import os
 import re
 import sys
+import urllib.error
 import urllib.request
 
 URL = "https://cloudflare.cdn.openbsd.org/pub/OpenBSD/"
+# Same path as VM_ISO_LINK in conf/openbsd-<ver>.conf.
+MEDIA = URL + "{v}/amd64/install{vc}.iso"
 TIMEOUT = 60
 USER_AGENT = "anyvm-org-upstream-watcher/1.0"
 
@@ -83,6 +107,24 @@ def fetch(url):
         return resp.read().decode("utf-8", "replace")
 
 
+def published(version):
+    """True when <version>'s amd64 install ISO exists, False on a 404.
+
+    Any other outcome raises, so the caller reports broken detection
+    instead of mistaking an outage for "not released yet".
+    """
+    url = MEDIA.format(v=version, vc=version.replace(".", ""))
+    req = urllib.request.Request(url, method="HEAD",
+                                 headers={"User-Agent": USER_AGENT})
+    try:
+        with urllib.request.urlopen(req, timeout=TIMEOUT):
+            return True
+    except urllib.error.HTTPError as e:
+        if e.code == 404:
+            return False
+        raise
+
+
 def main():
     try:
         key = resolve_natural_key()
@@ -100,9 +142,22 @@ def main():
         sys.stderr.write("upstream_check: no release directory found in "
                          "%s; page shape may have changed\n" % URL)
         return 1
-    newest = sorted(set(versions), key=key)[-1]
-    print(newest)
-    return 0
+    for version in sorted(set(versions), key=key, reverse=True):
+        try:
+            ok = published(version)
+        except Exception as e:
+            sys.stderr.write("upstream_check: media check for %s failed: "
+                             "%s\n" % (version, e))
+            return 1
+        if ok:
+            print(version)
+            return 0
+        sys.stderr.write("upstream_check: %s/ is listed but its install "
+                         "media is not published yet, skipping\n" % version)
+    sys.stderr.write("upstream_check: no listed release has install media "
+                     "at %s; media naming may have changed\n"
+                     % MEDIA.format(v="X.Y", vc="XY"))
+    return 1
 
 
 if __name__ == "__main__":
