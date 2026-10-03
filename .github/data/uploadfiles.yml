@@ -12,7 +12,9 @@
   # Neither binary is committed to git: bios/ and files/ carry only the
   # patches and the build scripts, which compile both from pinned upstream
   # sources right here (the same scripts hooks/host_beforeBuild.sh uses
-  # during image builds, so what ships is what the images were verified on).
+  # during image builds, so the images are verified on the same sources and
+  # patches; there they compile on the ubuntu-26.04 runner, here on noble --
+  # see runs-on below).
   # Self-contained on purpose: a sibling builder publishes an identical
   # patched QEMU for its own guests, and we deliberately do NOT reuse it --
   # deleting any one builder must not affect any other builder or VM action.
@@ -26,6 +28,9 @@
     # Gate on the event, not github.ref: a 'release' event's github.ref can be
     # refs/heads/<branch>, which silently skips the upload. event_name is stable.
     if: "github.event_name == 'release' || startsWith(github.ref, 'refs/tags/')"
+    # Stays on ubuntu-24.04 while build.yml's image builds run on 26.04: the
+    # QEMU tarball is the noble build that anyvm downloads on every Linux
+    # x86_64 host, ubuntu-24.04 included.
     runs-on: ubuntu-24.04
     steps:
     - uses: actions/checkout@v6

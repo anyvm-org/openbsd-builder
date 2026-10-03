@@ -5,10 +5,10 @@
 # Generates the two sparc64 binaries on the fly; neither is committed to
 # git, bios/ and files/ carry only the patches and the build scripts. CI
 # compiles them per build HERE, and the release-files job in
-# .github/data/uploadfiles.yml compiles the same ones when publishing them
-# as release assets -- so what ships is exactly what the images were built
-# and verified on, and a broken artifact fails a build instead of reaching
-# users at run time.
+# .github/data/uploadfiles.yml compiles the same sources and patches when
+# publishing them as release assets -- here on the ubuntu-26.04 runner,
+# there on noble, which the QEMU tarball is built for -- so a broken script
+# or patch fails a build instead of reaching users at run time.
 #
 #  1. VM_QEMU_TAR -- the patched qemu-system-sparc64 the BUILD ITSELF runs
 #     on. GitHub runners ship stock QEMU 8.2, whose sun4u sabre PCI-host
