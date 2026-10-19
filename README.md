@@ -14,6 +14,7 @@ All the supported releases are here:
 
 | Release | x86_64 | aarch64(arm64) | riscv64 | sparc64 |
 |---------|---------|---------|---------|---------|
+| 8.0 | ✅ (rsync,scp,sshfs,nfs,tar) | ✅ (rsync,scp,sshfs,nfs,tar) | ✅ (rsync,scp,sshfs,nfs,tar) | ✅ (rsync,scp,sshfs,nfs,tar) |
 | 7.9 | ✅ (rsync,scp,sshfs,nfs,tar) | ✅ (rsync,scp,sshfs,nfs,tar) | ✅ (rsync,scp,sshfs,nfs,tar) | ✅ (rsync,scp,sshfs,nfs,tar) |
 | 7.8 | ✅ (rsync,scp,sshfs,nfs,tar) | ✅ (rsync,scp,sshfs,nfs,tar) | ✅ (rsync,scp,sshfs,nfs,tar) | — |
 | 7.7 | ✅ (rsync,scp,sshfs,nfs,tar) | ✅ (rsync,scp,sshfs,nfs,tar) | ✅ (rsync,scp,sshfs,nfs,tar) | — |
@@ -63,6 +64,13 @@ OpenBSD desktop images (x86_64):
 
 | Release | x86_64 | aarch64(arm64) | riscv64 | sparc64 |
 |---------|---------|---------|---------|---------|
+| 8.0-xfce | ✅ | — | — | — |
+| 8.0-mate | ✅ | — | — | — |
+| 8.0-lxqt | ✅ | — | — | — |
+| 8.0-lumina | ✅ | — | — | — |
+| 8.0-kde6 | ✅ | — | — | — |
+| 8.0-gnome | ✅ | — | — | — |
+| 8.0-enlightenment | ✅ | — | — | — |
 | 7.9-xfce | ✅ | — | — | — |
 | 7.9-mate | ✅ | — | — | — |
 | 7.9-lxqt | ✅ | — | — | — |
@@ -85,6 +93,6 @@ How to build:
 
     Just clone the repo. and run:
     ```bash
-    python3 build.py conf/openbsd-7.9.conf
+    python3 build.py conf/openbsd-8.0.conf
     ```
    
