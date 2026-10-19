@@ -225,6 +225,105 @@
       "shutdown": "/sbin/shutdown -p now",
       "desktop": true,
       "build": true
+    },
+    {
+      "tag": "8.0",
+      "release": "8.0",
+      "arch": "x86_64",
+      "sync": "rsync,scp,sshfs,nfs,tar",
+      "shutdown": "/sbin/shutdown -p now",
+      "desktop": false,
+      "build": true
+    },
+    {
+      "tag": "8.0-aarch64",
+      "release": "8.0",
+      "arch": "aarch64",
+      "sync": "rsync,scp,sshfs,nfs,tar",
+      "shutdown": "/sbin/shutdown -p now",
+      "desktop": false,
+      "build": true
+    },
+    {
+      "tag": "8.0-riscv64",
+      "release": "8.0",
+      "arch": "riscv64",
+      "sync": "rsync,scp,sshfs,nfs,tar",
+      "shutdown": "/sbin/shutdown -p now",
+      "desktop": false,
+      "build": true
+    },
+    {
+      "tag": "8.0-sparc64",
+      "release": "8.0",
+      "arch": "sparc64",
+      "sync": "rsync,scp,sshfs,nfs,tar",
+      "shutdown": "/sbin/shutdown -p now",
+      "desktop": false,
+      "build": true
+    },
+    {
+      "tag": "8.0-enlightenment",
+      "release": "8.0-enlightenment",
+      "arch": "x86_64",
+      "sync": "rsync,scp,sshfs,nfs,tar",
+      "shutdown": "/sbin/shutdown -p now",
+      "desktop": true,
+      "build": true
+    },
+    {
+      "tag": "8.0-gnome",
+      "release": "8.0-gnome",
+      "arch": "x86_64",
+      "sync": "rsync,scp,sshfs,nfs,tar",
+      "shutdown": "/sbin/shutdown -p now",
+      "desktop": true,
+      "build": true
+    },
+    {
+      "tag": "8.0-kde6",
+      "release": "8.0-kde6",
+      "arch": "x86_64",
+      "sync": "rsync,scp,sshfs,nfs,tar",
+      "shutdown": "/sbin/shutdown -p now",
+      "desktop": true,
+      "build": true
+    },
+    {
+      "tag": "8.0-lumina",
+      "release": "8.0-lumina",
+      "arch": "x86_64",
+      "sync": "rsync,scp,sshfs,nfs,tar",
+      "shutdown": "/sbin/shutdown -p now",
+      "desktop": true,
+      "build": true
+    },
+    {
+      "tag": "8.0-lxqt",
+      "release": "8.0-lxqt",
+      "arch": "x86_64",
+      "sync": "rsync,scp,sshfs,nfs,tar",
+      "shutdown": "/sbin/shutdown -p now",
+      "desktop": true,
+      "build": true
+    },
+    {
+      "tag": "8.0-mate",
+      "release": "8.0-mate",
+      "arch": "x86_64",
+      "sync": "rsync,scp,sshfs,nfs,tar",
+      "shutdown": "/sbin/shutdown -p now",
+      "desktop": true,
+      "build": true
+    },
+    {
+      "tag": "8.0-xfce",
+      "release": "8.0-xfce",
+      "arch": "x86_64",
+      "sync": "rsync,scp,sshfs,nfs,tar",
+      "shutdown": "/sbin/shutdown -p now",
+      "desktop": true,
+      "build": true
     }
   ]
 }

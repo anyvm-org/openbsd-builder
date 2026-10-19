@@ -53,7 +53,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: ["7.7", "7.7-aarch64", "7.7-riscv64", "7.8", "7.8-aarch64", "7.8-riscv64", "7.9", "7.9-aarch64", "7.9-riscv64", "7.9-sparc64", "7.9-enlightenment", "7.9-gnome", "7.9-kde6", "7.9-lumina", "7.9-lxqt", "7.9-mate", "7.9-xfce"]
+        os: ["7.7", "7.7-aarch64", "7.7-riscv64", "7.8", "7.8-aarch64", "7.8-riscv64", "7.9", "7.9-aarch64", "7.9-riscv64", "7.9-sparc64", "7.9-enlightenment", "7.9-gnome", "7.9-kde6", "7.9-lumina", "7.9-lxqt", "7.9-mate", "7.9-xfce", "8.0", "8.0-aarch64", "8.0-enlightenment", "8.0-gnome", "8.0-kde6", "8.0-lumina", "8.0-lxqt", "8.0-mate", "8.0-riscv64", "8.0-sparc64", "8.0-xfce"]
     runs-on: ubuntu-26.04
     steps:
 #    - name: Free Disk Space (Ubuntu)
